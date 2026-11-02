@@ -121,7 +121,7 @@ ImageNet pretrained DenseNet121을 기반으로 Fine-tuning 하여 만든 모델
 ---
 
 # 📎 Contact
-- **Email:** (본인 이메일 입력)  
+- **Email:** (kms37720@gmail.com)  
 - **GitHub:** https://github.com/Duckrjdnl  
 
 ---
