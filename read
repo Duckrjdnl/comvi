@@ -168,7 +168,7 @@ Network-Portfolio/
     ├── Company_Network.pkt
     │
     └── Screenshots/
-        ├── topology.png
+        ├── ![Network Topology](Screenshots/topology.png)
         ├── vlan.png
         ├── trunk.png
         ├── router_config.png
