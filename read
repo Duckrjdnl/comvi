@@ -16,19 +16,16 @@ VLAN을 이용해 부서별 네트워크를 분리하고, Router-on-a-Stick을 �
 
 ## 2. 네트워크 구성도
 
-![Network Topology](Screenshots/topology.png)
+### 네트워크 구성 및 포트 연결
 
-### 네트워크 구성
-
-| 장비 | 연결 포트 | 연결 대상 |
-|---|---|---|
-| Router 2911 | G0/0 | Switch Fa0/1 |
-| Switch 2960 | Fa0/2 | PC0 (HR) |
-| Switch 2960 | Fa0/3 | PC1 (DEV) |
+| 장비 | 포트 | 연결 대상 | 설정 |
+|---|---|---|---|
+| Router 2911 | G0/0 | Switch Fa0/1 | Trunk 연결 |
+| Switch 2960 | Fa0/1 | Router G0/0 | Trunk |
+| Switch 2960 | Fa0/2 | PC0 (HR) | Access VLAN 10 |
+| Switch 2960 | Fa0/3 | PC1 (DEV) | Access VLAN 20 |
 
 ## 3. IP 주소 및 VLAN 설계
-
-부서별 네트워크를 구분하기 위해 VLAN 10과 VLAN 20을 생성했습니다.
 
 | 구분 | VLAN | 네트워크 주소 | PC IP 주소 | 기본 게이트웨이 |
 |---|---:|---|---|---|
@@ -64,9 +61,12 @@ switchport access vlan 20
 exit
 ```
 
+- Fa0/2: HR 부서 VLAN 10
+- Fa0/3: DEV 부서 VLAN 20
+
 ### 4-2. Trunk 설정
 
-라우터와 스위치 사이의 연결 포트를 Trunk 모드로 설정했습니다.
+라우터와 스위치 사이의 연결 포트인 Fa0/1을 Trunk 모드로 설정했습니다.
 
 ```bash
 en
@@ -135,18 +135,14 @@ exit
 
 **ACL 통신 테스트**
 
-| 출발지 | 목적지 | 테스트 결과 |
+| 출발지 | 목적지 | 결과 |
 |---|---|---|
 | PC0 (HR) | PC1 (DEV) | 차단 |
 | PC1 (DEV) | PC0 (HR) | 허용 |
 
-PC0에서 PC1로 Ping을 실행했을 때 통신이 차단되었으며, 반대 방향인 PC1에서 PC0으로 Ping을 실행했을 때 통신이 성공하는 것을 확인했습니다.
-
 ### 4-5. DHCP를 이용한 IP 주소 자동 할당
 
-기존에는 각 PC에 IP 주소와 게이트웨이를 직접 입력했지만, DHCP를 적용하여 자동으로 IP 주소를 할당하도록 구성했습니다.
-
-별도의 DHCP 서버 장비 대신 라우터의 DHCP 기능을 사용했습니다.
+라우터의 DHCP 기능을 활용하여 각 부서의 PC에 IP 주소를 자동으로 할당하도록 구성했습니다.
 
 **1) DHCP 할당 제외 주소 설정**
 
@@ -156,8 +152,6 @@ conf t
 ip dhcp excluded-address 192.168.10.1 192.168.10.9
 ip dhcp excluded-address 192.168.20.1 192.168.20.9
 ```
-
-게이트웨이 등 네트워크 장비에 사용할 IP 주소를 자동 할당 대상에서 제외했습니다.
 
 **2) HR 부서 DHCP 풀 생성**
 
@@ -179,8 +173,6 @@ exit
 
 **4) DHCP 할당 확인**
 
-라우터에서 다음 명령어를 실행하여 IP 주소 할당 내역을 확인했습니다.
-
 ```bash
 show ip dhcp binding
 ```
@@ -192,20 +184,28 @@ show ip dhcp binding
 | PC0 (HR) | 192.168.10.10 | 할당 확인 |
 | PC1 (DEV) | 192.168.20.10 | 할당 확인 |
 
-두 PC의 DHCP 주소 할당 내역을 라우터에서 확인했습니다.
-
 ## 5. 네트워크 검증
 
-### 5-1. VLAN 및 Trunk 확인
+### 5-1. VLAN 확인
 
 ```bash
 show vlan brief
+```
+
+- VLAN 10: Fa0/2
+- VLAN 20: Fa0/3
+
+### 5-2. Trunk 확인
+
+```bash
 show interfaces trunk
 ```
 
-VLAN 생성 여부와 Trunk 포트 동작 상태를 확인했습니다.
+- Fa0/1의 Trunk 동작 상태 확인
+- IEEE 802.1Q 캡슐화 확인
+- VLAN 10, 20 전달 여부 확인
 
-### 5-2. 라우터 인터페이스 확인
+### 5-3. 라우터 인터페이스 확인
 
 ```bash
 show ip interface brief
@@ -213,15 +213,15 @@ show ip interface brief
 
 라우터 서브인터페이스의 IP 주소와 상태를 확인했습니다.
 
-### 5-3. ACL 확인
+### 5-4. ACL 확인
 
 ```bash
 show access-lists
 ```
 
-ACL 규칙과 패킷 매칭 횟수를 확인할 수 있도록 구성했습니다.
+ACL 규칙과 패킷 매칭 횟수를 확인할 수 있습니다.
 
-### 5-4. DHCP 확인
+### 5-5. DHCP 확인
 
 ```bash
 show ip dhcp binding
@@ -230,7 +230,7 @@ show ip dhcp pool
 
 DHCP 주소 풀과 실제 IP 할당 내역을 확인했습니다.
 
-### 5-5. Ping 테스트
+### 5-6. Ping 테스트
 
 라우터에서 PC1을 대상으로 Ping 테스트를 진행했습니다.
 
@@ -253,10 +253,6 @@ ping 192.168.20.10
 - Ping을 활용한 네트워크 연결 상태 검증
 
 ## 7. 향후 개선 계획
-
-현재 VLAN 분리, VLAN 간 라우팅, ACL 접근 제어 및 DHCP 자동 할당을 구현했습니다.
-
-향후 다음 기능을 추가하여 네트워크를 확장할 계획입니다.
 
 - DNS 서버 구축 및 도메인 이름 연결
 - Web Server 구축 및 사내 웹페이지 구성
@@ -286,7 +282,7 @@ Network-Portfolio/
 
 **프로젝트 목표:** 기업 네트워크 환경에서 부서별 네트워크 분리 및 통신 접근 제어 구현
 
-**구현 기능:**
+**구현 기능**
 - VLAN 기반 부서별 네트워크 분리
 - Trunk를 이용한 다중 VLAN 데이터 전달
 - Router-on-a-Stick 기반 VLAN 간 라우팅
@@ -294,4 +290,3 @@ Network-Portfolio/
 - DHCP 기반 IP 주소 자동 할당
 
 **사용 도구:** Cisco Packet Tracer
-
