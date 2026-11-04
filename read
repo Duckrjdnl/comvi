@@ -23,8 +23,8 @@ Cisco Packet Tracer를 활용하여 기업 환경을 가정한 부서별 네트�
 | 장비 | 연결 포트 | 연결 대상 |
 |---|---|---|
 | Router 2911 | G0/0 | Switch Fa0/1 |
-| Switch 2960 | Fa0/2 | PC0 (HR) |
-| Switch 2960 | Fa0/3 | PC1 (DEV) |
+| Switch 2960 | Fa0/2 | PC2 (HR) |
+| Switch 2960 | Fa0/3 | PC3 (DEV) |
 
 ## 3. IP 주소 및 VLAN 설계
 
@@ -152,7 +152,7 @@ exit
 
 PC 간 Ping 테스트를 통해 ACL 정책이 정상적으로 적용되는지 확인했습니다.
 
-**테스트 1: HR(PC0) → DEV(PC1)**
+**테스트 1: HR(PC2) → DEV(PC3)**
 
 ```bash
 ping 192.168.20.10
@@ -162,7 +162,7 @@ ping 192.168.20.10
 
 ![ACL Block Test](Screenshots/acl_block.png)
 
-**테스트 2: DEV(PC1) → HR(PC0)**
+**테스트 2: DEV(PC3) → HR(PC2)**
 
 ```bash
 ping 192.168.10.10
@@ -176,8 +176,8 @@ ping 192.168.10.10
 
 | 출발지 | 목적지 | 테스트 결과 |
 |---|---|---|
-| PC0 (HR) | PC1 (DEV) | 차단 |
-| PC1 (DEV) | PC0 (HR) | 허용 |
+| PC2 (HR) | PC3 (DEV) | 차단 |
+| PC3 (DEV) | PC2 (HR) | 허용 |
 
 ACL을 통해 부서별 네트워크 접근 권한을 구분하고 설정한 통신 정책이 동작하는 것을 확인했습니다.
 
