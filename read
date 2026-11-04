@@ -5,12 +5,14 @@
 
 Cisco Packet Tracer를 활용하여 기업 환경을 가정한 부서별 네트워크를 구축한 프로젝트입니다.
 
-부서별로 VLAN을 분리하여 네트워크를 논리적으로 구분하고, Router-on-a-Stick 방식을 통해 서로 다른 VLAN 간 통신이 가능하도록 구성했습니다.
+부서별로 VLAN을 분리하여 네트워크를 논리적으로 구분하고, Router-on-a-Stick 방식으로 VLAN 간 통신을 구현했습니다.
+
+또한 ACL(Access Control List)을 적용하여 부서별 통신 접근 권한을 제어했습니다.
 
 - **프로젝트 유형:** 네트워크 설계 및 구축
 - **사용 도구:** Cisco Packet Tracer
-- **구축 환경:** Cisco Router 2911, Cisco Switch 2960
-- **주요 기술:** IPv4, Subnetting, VLAN, Trunk, IEEE 802.1Q, Inter-VLAN Routing
+- **장비:** Cisco Router 2911, Cisco Switch 2960
+- **주요 기술:** IPv4, Subnetting, VLAN, Trunk, IEEE 802.1Q, Inter-VLAN Routing, ACL
 
 ## 2. 네트워크 구성도
 
@@ -82,7 +84,7 @@ switchport mode trunk
 exit
 ```
 
-Trunk를 통해 하나의 물리적 연결에서 여러 VLAN의 트래픽을 전달할 수 있도록 구성했습니다.
+Trunk를 통해 하나의 물리적 연결에서 여러 VLAN의 트래픽을 전달하도록 구성했습니다.
 
 ### 4-3. Router-on-a-Stick 설정
 
@@ -109,23 +111,77 @@ ip add 192.168.20.1 255.255.255.0
 exit
 ```
 
-## 5. 네트워크 연결 테스트
+## 5. ACL을 이용한 부서별 통신 접근 제어
 
-서로 다른 VLAN에 속한 PC 간 통신이 가능한지 확인했습니다.
+### 5-1. ACL 적용 목적
 
-### PC0 (HR) → PC1 (DEV)
+HR 부서와 DEV 부서 간 통신 정책을 설정하기 위해 확장 ACL(Extended ACL)을 사용했습니다.
+
+**네트워크 접근 정책**
+
+- HR(VLAN 10) → DEV(VLAN 20): 통신 차단
+- DEV(VLAN 20) → HR(VLAN 10): 통신 허용
+
+### 5-2. ACL 설정
+
+확장 ACL 101을 생성하고 HR 네트워크에서 DEV 네트워크로 향하는 트래픽을 차단하도록 설정했습니다.
+
+```bash
+en
+conf t
+
+ip access-list extended 101
+deny ip 192.168.10.0 0.0.0.255 192.168.20.0 0.0.0.255
+permit ip any any
+exit
+
+int g0/0.10
+ip access-group 101 in
+exit
+```
+
+**설정 내용**
+
+- `deny ip`: 지정한 출발지와 목적지 사이의 IP 통신 차단
+- `192.168.10.0 0.0.0.255`: HR 네트워크
+- `192.168.20.0 0.0.0.255`: DEV 네트워크
+- `permit ip any any`: 나머지 IP 통신 허용
+- `ip access-group 101 in`: G0/0.10 인터페이스로 들어오는 트래픽에 ACL 적용
+
+### 5-3. ACL 통신 테스트
+
+PC 간 Ping 테스트를 통해 ACL 정책이 정상적으로 적용되는지 확인했습니다.
+
+**테스트 1: HR(PC0) → DEV(PC1)**
 
 ```bash
 ping 192.168.20.10
 ```
 
-### 테스트 결과
+결과: 통신 차단
 
-- PC0에서 PC1로 Ping 테스트 성공
-- 서로 다른 VLAN 간 통신 확인
-- Router-on-a-Stick을 통한 Inter-VLAN Routing 동작 확인
+![ACL Block Test](Screenshots/acl_block.png)
 
-![Ping Test](Screenshots/ping_test.png)
+**테스트 2: DEV(PC1) → HR(PC0)**
+
+```bash
+ping 192.168.10.10
+```
+
+결과: 통신 성공
+
+![ACL Permit Test](Screenshots/acl_permit.png)
+
+### 5-4. ACL 테스트 결과
+
+| 출발지 | 목적지 | 테스트 결과 |
+|---|---|---|
+| PC0 (HR) | PC1 (DEV) | 차단 |
+| PC1 (DEV) | PC0 (HR) | 허용 |
+
+ACL을 통해 부서별 네트워크 접근 권한을 구분하고 설정한 통신 정책이 동작하는 것을 확인했습니다.
+
+※ 본 프로젝트는 ACL 규칙에 따른 IP 패킷 필터링을 구현한 것으로, 상태 기반 방화벽과는 구분됩니다.
 
 ## 6. 네트워크 검증 명령어
 
@@ -134,7 +190,8 @@ ping 192.168.20.10
 | `show vlan brief` | VLAN 생성 및 포트 할당 확인 |
 | `show interfaces trunk` | Trunk 포트 확인 |
 | `show ip interface brief` | 라우터 인터페이스 및 IP 상태 확인 |
-| `ping` | 장비 간 네트워크 연결 확인 |
+| `show access-lists` | ACL 규칙 및 매칭 횟수 확인 |
+| `ping` | 네트워크 연결 및 접근 제어 테스트 |
 
 ## 7. 프로젝트를 통해 학습한 내용
 
@@ -143,38 +200,39 @@ ping 192.168.20.10
 - Access 포트와 Trunk 포트의 차이 이해
 - IEEE 802.1Q 태깅 방식 이해
 - Router-on-a-Stick을 이용한 Inter-VLAN Routing 구현
-- Ping을 이용한 네트워크 연결 상태 검증
+- 확장 ACL을 이용한 네트워크 접근 제어
+- Ping을 활용한 네트워크 연결 상태 검증
 - Cisco IOS CLI를 이용한 라우터 및 스위치 설정
 
 ## 8. 향후 개선 계획
 
-현재 VLAN 분리와 VLAN 간 라우팅 구성을 완료했습니다.
+현재 VLAN 분리, VLAN 간 라우팅 및 ACL을 이용한 접근 제어를 완료했습니다.
 
 향후 다음 기능을 추가하여 네트워크를 확장할 계획입니다.
 
-- ACL을 이용한 부서별 통신 접근 제어
 - DHCP를 이용한 IP 주소 자동 할당
 - DNS 및 Web Server 구성
-- 부서 및 네트워크 규모 확장
+- 네트워크 규모 확장
+- 정적 라우팅 및 OSPF 구성
 - 네트워크 장애 상황을 가정한 트러블슈팅
 
 ## 9. 프로젝트 파일
 
 ```text
 Network-Portfolio/
-│
 └── 01_VLAN_Network/
     ├── README.md
     ├── Company_Network.pkt
-    │
     └── Screenshots/
-        ├── ![Network Topology](Screenshots/topology.png)
+        ├── topology.png
         ├── vlan.png
         ├── trunk.png
         ├── router_config.png
-        └── ping_test.png
+        ├── ping_test.png
+        ├── acl_block.png
+        └── acl_permit.png
 ```
 
 **사용 도구:** Cisco Packet Tracer
 
-**프로젝트 목적:** 기업 네트워크 환경에서 VLAN 분리 및 부서 간 통신을 구현하고 네트워크 구성과 검증 과정을 실습
+**프로젝트 목적:** 기업 네트워크 환경에서 VLAN을 통한 부서별 네트워크 분리, Inter-VLAN Routing 및 ACL을 활용한 접근 제어 구현
