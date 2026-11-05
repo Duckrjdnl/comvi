@@ -1,266 +1,259 @@
 # 기업 부서별 VLAN 네트워크 구축
 ### Enterprise Network Design & Implementation
 
-## 1. 프로젝트 소개
+## 1. 프로젝트 개요
 
-Cisco Packet Tracer를 활용하여 기업 환경을 가정한 부서별 네트워크를 설계하고 구축한 프로젝트입니다.
+Cisco Packet Tracer를 활용하여 기업 환경을 가정한 부서별 네트워크 인프라를 설계하고 구축한 프로젝트입니다.
 
-VLAN을 이용해 부서별 네트워크를 분리하고, Router-on-a-Stick을 통해 VLAN 간 통신을 구현했습니다.
+HR, DEV, SERVER 네트워크를 VLAN으로 분리하고 Router-on-a-Stick을 이용해 VLAN 간 라우팅을 구현했습니다.
 
-또한 ACL을 적용하여 부서별 통신 접근 권한을 제어하고, DHCP를 통해 IP 주소를 자동으로 할당하도록 구성했습니다.
+Extended ACL을 통한 부서별 접근 제어, DHCP 자동 IP 할당, DNS 도메인 이름 해석, HTTP 웹 서버 구축까지 진행했습니다.
 
-- **프로젝트 유형:** 네트워크 설계 및 구축
-- **사용 도구:** Cisco Packet Tracer
-- **네트워크 장비:** Cisco Router 2911, Cisco Switch 2960
-- **주요 기술:** IPv4, Subnetting, VLAN, Trunk, IEEE 802.1Q, Inter-VLAN Routing, ACL, DHCP
+- **프로젝트 유형:** 기업 네트워크 인프라 구축
+- **개발 도구:** Cisco Packet Tracer
+- **라우터:** Cisco 2911
+- **스위치:** Cisco 2960
+- **서버:** Server-PT
+- **주요 기술:** VLAN, Trunk, Router-on-a-Stick, ACL, DHCP, DNS, HTTP
 
 ## 2. 네트워크 구성도
 
-### 네트워크 구성 및 포트 연결
+```text
+                   [ Cisco 2911 Router ]
+                          G0/0
+                       802.1Q Trunk
+                            |
+                            |
+                   [ Cisco 2960 Switch ]
+                            |
+          +-----------------+-----------------+
+          |                 |                 |
+        Fa0/2             Fa0/3             Fa0/4
+          |                 |                 |
+       VLAN 10           VLAN 20           VLAN 30
+          |                 |                 |
+          HR                DEV             SERVER
+          |                 |                 |
+         PC0               PC1             Server-PT
+    192.168.10.10     192.168.20.10      192.168.30.2
+```
 
-| 장비 | 포트 | 연결 대상 | 설정 |
-|---|---|---|---|
-| Router 2911 | G0/0 | Switch Fa0/1 | Trunk 연결 |
-| Switch 2960 | Fa0/1 | Router G0/0 | Trunk |
-| Switch 2960 | Fa0/2 | PC0 (HR) | Access VLAN 10 |
-| Switch 2960 | Fa0/3 | PC1 (DEV) | Access VLAN 20 |
+## 3. 네트워크 IP 설계
 
-## 3. IP 주소 및 VLAN 설계
+| 구분 | VLAN | 네트워크 주소 | 게이트웨이 |
+|---|---:|---|---|
+| HR | 10 | 192.168.10.0/24 | 192.168.10.1 |
+| DEV | 20 | 192.168.20.0/24 | 192.168.20.1 |
+| SERVER | 30 | 192.168.30.0/24 | 192.168.30.1 |
 
-| 구분 | VLAN | 네트워크 주소 | PC IP 주소 | 기본 게이트웨이 |
-|---|---:|---|---|---|
-| HR | 10 | 192.168.10.0/24 | 192.168.10.10 | 192.168.10.1 |
-| DEV | 20 | 192.168.20.0/24 | 192.168.20.10 | 192.168.20.1 |
+### 장비별 IP 주소
 
-## 4. 주요 네트워크 설정
+| 장비 | 연결 포트 | IP 주소 |
+|---|---|---|
+| Router | G0/0.10 | 192.168.10.1 |
+| Router | G0/0.20 | 192.168.20.1 |
+| Router | G0/0.30 | 192.168.30.1 |
+| PC0 (HR) | Fa0/2 | 192.168.10.10 |
+| PC1 (DEV) | Fa0/3 | 192.168.20.10 |
+| Server-PT | Fa0/4 | 192.168.30.2 |
 
-### 4-1. VLAN 생성 및 포트 할당
+- PC: DHCP 자동 할당
+- Server: Static IP 설정
+- Subnet Mask: 255.255.255.0
 
-스위치에서 부서별 VLAN을 생성하고 각 PC가 연결된 포트를 할당했습니다.
+## 4. 주요 구현 내용
+
+### 4-1. VLAN 구성
+
+기업 부서별 네트워크를 논리적으로 분리했습니다.
 
 ```bash
-en
-conf t
-
 vlan 10
 name HR
-exit
-
 vlan 20
 name DEV
-exit
+vlan 30
+name SERVER
+```
 
+### 4-2. Access 포트 설정
+
+```bash
 int fa0/2
 switchport mode access
 switchport access vlan 10
-exit
 
 int fa0/3
 switchport mode access
 switchport access vlan 20
-exit
+
+int fa0/4
+switchport mode access
+switchport access vlan 30
 ```
 
-- Fa0/2: HR 부서 VLAN 10
-- Fa0/3: DEV 부서 VLAN 20
+### 4-3. Trunk 설정
 
-### 4-2. Trunk 설정
-
-라우터와 스위치 사이의 연결 포트인 Fa0/1을 Trunk 모드로 설정했습니다.
+라우터와 스위치 사이에서 여러 VLAN의 트래픽을 전달하도록 802.1Q Trunk를 구성했습니다.
 
 ```bash
-en
-conf t
-
 int fa0/1
 switchport mode trunk
-exit
 ```
 
-하나의 물리적 링크를 통해 여러 VLAN의 트래픽을 전달할 수 있도록 구성했습니다.
+### 4-4. Router-on-a-Stick
 
-### 4-3. Router-on-a-Stick 설정
-
-라우터의 물리 인터페이스 G0/0에 VLAN별 서브인터페이스를 생성했습니다.
-
-IEEE 802.1Q 캡슐화를 적용하여 VLAN별 게이트웨이를 설정했습니다.
+하나의 물리적 라우터 인터페이스에 VLAN별 서브인터페이스를 생성하여 VLAN 간 통신을 구현했습니다.
 
 ```bash
-en
-conf t
-
 int g0/0
-no shut
-exit
+no shutdown
 
 int g0/0.10
 encapsulation dot1Q 10
-ip add 192.168.10.1 255.255.255.0
-exit
+ip address 192.168.10.1 255.255.255.0
 
 int g0/0.20
 encapsulation dot1Q 20
-ip add 192.168.20.1 255.255.255.0
-exit
+ip address 192.168.20.1 255.255.255.0
+
+int g0/0.30
+encapsulation dot1Q 30
+ip address 192.168.30.1 255.255.255.0
 ```
 
-### 4-4. ACL을 이용한 부서별 통신 접근 제어
+### 4-5. ACL 접근 제어
 
-확장 ACL(Extended ACL)을 사용하여 부서별 통신 권한을 설정했습니다.
+Extended ACL을 이용하여 HR 부서의 네트워크 접근을 제한했습니다.
 
-**네트워크 접근 정책**
+**접근 정책**
 
-- HR(VLAN 10) → DEV(VLAN 20): 통신 차단
-- DEV(VLAN 20) → HR(VLAN 10): 통신 허용
+| 출발지 | 목적지 | 정책 |
+|---|---|---|
+| HR | DEV | 차단 |
+| HR | SERVER DNS (53) | 허용 |
+| HR | SERVER HTTP (80) | 허용 |
+| HR | SERVER HTTPS (443) | 허용 |
+| HR | SERVER 기타 통신 | 차단 |
+| DEV | HR | 허용 |
+| DEV | SERVER | 허용 |
+
+HR에서 서버에 접근할 때 DNS 및 웹 서비스에 필요한 포트만 허용하도록 설정했습니다.
+
+ACL은 Router의 G0/0.10 인터페이스에 Inbound 방향으로 적용했습니다.
 
 ```bash
-en
-conf t
-
 ip access-list extended 101
+permit udp 192.168.10.0 0.0.0.255 host 192.168.30.2 eq 53
+permit tcp 192.168.10.0 0.0.0.255 host 192.168.30.2 eq 53
+permit tcp 192.168.10.0 0.0.0.255 host 192.168.30.2 eq 80
+permit tcp 192.168.10.0 0.0.0.255 host 192.168.30.2 eq 443
+deny ip 192.168.10.0 0.0.0.255 192.168.30.0 0.0.0.255
 deny ip 192.168.10.0 0.0.0.255 192.168.20.0 0.0.0.255
 permit ip any any
-exit
 
-int g0/0.10
+interface g0/0.10
 ip access-group 101 in
-exit
 ```
 
-**주요 명령어 설명**
+※ 실제 장비의 ACL 순서는 `show access-lists` 결과를 기준으로 확인했습니다. ACL은 상태 추적 기능이 없는 Stateless 패킷 필터링 방식입니다.
 
-- `deny ip`: 지정한 네트워크 간 IP 통신 차단
-- `permit ip any any`: 나머지 IP 통신 허용
-- `ip access-group 101 in`: 인터페이스로 들어오는 트래픽에 ACL 적용
+### 4-6. DHCP 구성
 
-**ACL 통신 테스트**
-
-| 출발지 | 목적지 | 결과 |
-|---|---|---|
-| PC0 (HR) | PC1 (DEV) | 차단 |
-| PC1 (DEV) | PC0 (HR) | 허용 |
-
-### 4-5. DHCP를 이용한 IP 주소 자동 할당
-
-라우터의 DHCP 기능을 활용하여 각 부서의 PC에 IP 주소를 자동으로 할당하도록 구성했습니다.
-
-**1) DHCP 할당 제외 주소 설정**
+라우터에서 DHCP Pool을 생성하여 HR과 DEV PC에 IP 주소를 자동 할당하도록 구현했습니다.
 
 ```bash
-conf t
-
 ip dhcp excluded-address 192.168.10.1 192.168.10.9
 ip dhcp excluded-address 192.168.20.1 192.168.20.9
-```
 
-**2) HR 부서 DHCP 풀 생성**
-
-```bash
 ip dhcp pool HR
 network 192.168.10.0 255.255.255.0
 default-router 192.168.10.1
-exit
-```
+dns-server 192.168.30.2
 
-**3) DEV 부서 DHCP 풀 생성**
-
-```bash
 ip dhcp pool DEV
 network 192.168.20.0 255.255.255.0
 default-router 192.168.20.1
-exit
+dns-server 192.168.30.2
 ```
 
-**4) DHCP 할당 확인**
+DHCP를 통해 각 PC에 IP 주소, 기본 게이트웨이, DNS 서버 주소를 자동으로 전달하도록 구성했습니다.
 
-```bash
-show ip dhcp binding
-```
+### 4-7. DNS 서버 구축
 
-**DHCP 테스트 결과**
+Server-PT에서 DNS 서비스를 활성화하고 A Record를 등록했습니다.
 
-| 구분 | 할당된 IP 주소 | 결과 |
+| 항목 | 설정값 |
+|---|---|
+| Domain | www.goosetalk.com |
+| Record Type | A |
+| IP Address | 192.168.30.2 |
+
+PC에서 도메인 이름을 입력하면 DNS 서버가 해당 서버의 IP 주소를 반환하도록 구현했습니다.
+
+### 4-8. HTTP 웹 서버 구축
+
+Server-PT에서 HTTP 서비스를 활성화하고 웹페이지를 직접 제작했습니다.
+
+- Web Server IP: 192.168.30.2
+- HTTP Port: 80
+- HTTPS Port: 443 (서비스 활성화 시)
+- Domain: www.goosetalk.com
+
+HR과 DEV 부서에서 웹 브라우저를 통해 도메인 이름으로 서버에 접근할 수 있도록 구성했습니다.
+
+## 5. 최종 네트워크 검증 결과
+
+모든 주요 네트워크 기능과 서버 서비스에 대한 테스트를 완료했습니다.
+
+| 검증 항목 | 테스트 방법 | 결과 |
 |---|---|---|
-| PC0 (HR) | 192.168.10.10 | 할당 확인 |
-| PC1 (DEV) | 192.168.20.10 | 할당 확인 |
+| VLAN 분리 | `show vlan brief` | 성공 |
+| Trunk 연결 | `show interfaces trunk` | 성공 |
+| Router-on-a-Stick | `show ip interface brief` | 성공 |
+| HR → DEV 접근 차단 | `ping 192.168.20.10` | 차단 확인 |
+| DEV → HR 접근 허용 | `ping 192.168.10.10` | 통신 성공 |
+| DHCP 자동 할당 | `show ip dhcp binding` | 할당 성공 |
+| DNS 도메인 조회 | `nslookup www.goosetalk.com` | 조회 성공 |
+| HR 웹 접속 | `http://www.goosetalk.com` | 접속 성공 |
+| DEV 웹 접속 | `http://www.goosetalk.com` | 접속 성공 |
+| 서버 게이트웨이 통신 | `ping 192.168.30.1` | 통신 성공 |
 
-## 5. 네트워크 검증
-
-### 5-1. VLAN 확인
+## 6. 주요 확인 명령어
 
 ```bash
 show vlan brief
-```
-
-- VLAN 10: Fa0/2
-- VLAN 20: Fa0/3
-
-### 5-2. Trunk 확인
-
-```bash
 show interfaces trunk
-```
-
-- Fa0/1의 Trunk 동작 상태 확인
-- IEEE 802.1Q 캡슐화 확인
-- VLAN 10, 20 전달 여부 확인
-
-### 5-3. 라우터 인터페이스 확인
-
-```bash
 show ip interface brief
-```
-
-라우터 서브인터페이스의 IP 주소와 상태를 확인했습니다.
-
-### 5-4. ACL 확인
-
-```bash
 show access-lists
-```
-
-ACL 규칙과 패킷 매칭 횟수를 확인할 수 있습니다.
-
-### 5-5. DHCP 확인
-
-```bash
 show ip dhcp binding
-show ip dhcp pool
+show running-config
 ```
 
-DHCP 주소 풀과 실제 IP 할당 내역을 확인했습니다.
+## 7. 프로젝트를 통해 학습한 내용
 
-### 5-6. Ping 테스트
-
-라우터에서 PC1을 대상으로 Ping 테스트를 진행했습니다.
-
-```bash
-ping 192.168.20.10
-```
-
-**테스트 결과:** 5개 패킷 중 5개 응답 성공 (100%)
-
-## 6. 프로젝트를 통해 학습한 내용
-
-- IPv4 주소 체계와 서브넷 마스크 이해
 - VLAN을 활용한 부서별 네트워크 분리
-- Access와 Trunk 포트의 차이 이해
-- IEEE 802.1Q 태깅 방식 이해
-- Router-on-a-Stick을 이용한 Inter-VLAN Routing 구현
-- Extended ACL을 이용한 네트워크 접근 제어
-- DHCP를 이용한 IP 주소 자동 할당
-- Cisco IOS CLI를 이용한 라우터 및 스위치 설정
-- Ping을 활용한 네트워크 연결 상태 검증
+- 802.1Q Trunk를 통한 다중 VLAN 트래픽 전달
+- Router-on-a-Stick을 이용한 VLAN 간 라우팅
+- Extended ACL을 활용한 부서별 접근 제어
+- DHCP Pool을 이용한 IP 자동 할당
+- DNS A Record를 이용한 도메인 이름 해석
+- HTTP 웹 서버 구축 및 서비스 연동
+- ACL 정책에 따른 통신 허용 및 차단 원리
+- DHCP, DNS, HTTP 서비스 간 네트워크 연동
+- 네트워크 장애 발생 시 계층별 원인 분석 및 문제 해결
 
-## 7. 향후 개선 계획
+## 8. 프로젝트 개선 계획
 
-- DNS 서버 구축 및 도메인 이름 연결
-- Web Server 구축 및 사내 웹페이지 구성
-- 추가 부서 및 VLAN 확장
-- 정적 라우팅 및 OSPF 구성
-- 네트워크 장애 상황을 가정한 트러블슈팅
+추가적인 네트워크 엔지니어링 기술을 적용하여 프로젝트를 확장할 계획입니다.
 
-## 8. 프로젝트 파일 구조
+- SSH 기반 네트워크 장비 원격 관리
+- OSPF를 이용한 동적 라우팅
+- 서버 이중화 및 백업 구성
+- 네트워크 모니터링 및 로그 관리
+- 방화벽 및 보안 정책 확장
+
+## 9. 프로젝트 파일 구조
 
 ```text
 Network-Portfolio/
@@ -275,18 +268,18 @@ Network-Portfolio/
         ├── acl_block.png
         ├── acl_permit.png
         ├── dhcp_binding.png
-        └── ping_test.png
+        ├── dns_test.png
+        └── web_test.png
 ```
 
-## 9. 프로젝트 요약
+## 10. 프로젝트 요약
 
-**프로젝트 목표:** 기업 네트워크 환경에서 부서별 네트워크 분리 및 통신 접근 제어 구현
+본 프로젝트에서는 기업 환경을 가정하여 HR, DEV, SERVER의 3개 VLAN으로 구성된 네트워크를 설계하고 구축했습니다.
 
-**구현 기능**
-- VLAN 기반 부서별 네트워크 분리
-- Trunk를 이용한 다중 VLAN 데이터 전달
-- Router-on-a-Stick 기반 VLAN 간 라우팅
-- ACL 기반 부서별 통신 접근 제어
-- DHCP 기반 IP 주소 자동 할당
+VLAN 분리와 Router-on-a-Stick을 통해 부서별 네트워크 통신을 구현했으며, Extended ACL을 활용하여 접근 권한을 제어했습니다.
 
-**사용 도구:** Cisco Packet Tracer
+또한 DHCP, DNS, HTTP 서비스를 구축하고 실제 PC에서 도메인 조회 및 웹 서버 접속을 검증했습니다.
+
+**Project:** Enterprise Network Design & Implementation  
+**Tool:** Cisco Packet Tracer  
+**Focus:** Network Infrastructure / VLAN / Routing / Network Security / Network Services
