@@ -191,6 +191,7 @@ dns-server 192.168.30.2
 DHCP를 통해 각 PC에 IP 주소, 기본 게이트웨이, DNS 서버 주소를 자동으로 전달하도록 구성했습니다.
 
 ![DHCP Binding](Screenshots/dhcp_binding.png)
+
 ### 4-7. DNS 서버 구축
 
 Server-PT에서 DNS 서비스를 활성화하고 A Record를 등록했습니다.
@@ -202,7 +203,9 @@ Server-PT에서 DNS 서비스를 활성화하고 A Record를 등록했습니다.
 | IP Address | 192.168.30.2 |
 
 PC에서 도메인 이름을 입력하면 DNS 서버가 해당 서버의 IP 주소를 반환하도록 구현했습니다.
+
 ![DNS Test](Screenshots/dns_test.png)
+
 ### 4-8. HTTP 웹 서버 구축
 
 Server-PT에서 HTTP 서비스를 활성화하고 웹페이지를 직접 제작했습니다.
