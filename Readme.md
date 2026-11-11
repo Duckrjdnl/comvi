@@ -82,7 +82,7 @@ name DEV
 vlan 30
 name SERVER
 ```
-
+![VLAN Configuration](Screenshots/vlan.png)
 ### 4-2. Access 포트 설정
 
 각 PC와 서버가 지정된 VLAN에 연결되도록 스위치 포트를 설정했습니다.
@@ -109,7 +109,7 @@ switchport access vlan 30
 int fa0/1
 switchport mode trunk
 ```
-
+![Trunk Configuration](Screenshots/trunk.png)
 ### 4-4. Router-on-a-Stick 구성
 
 하나의 물리적 라우터 인터페이스에 VLAN별 서브인터페이스를 생성하여 VLAN 간 라우팅을 구현했습니다.
@@ -130,7 +130,7 @@ int g0/0.30
 encapsulation dot1Q 30
 ip address 192.168.30.1 255.255.255.0
 ```
-
+![Router Configuration](Screenshots/router_config.png)
 ### 4-5. Extended ACL 접근 제어
 
 Extended ACL을 이용하여 부서별 네트워크 접근 정책을 구성했습니다.
@@ -166,11 +166,13 @@ ip access-group 101 in
 ```
 
 ACL은 Stateless 패킷 필터링 방식으로 동작하며, 규칙의 순서에 따라 패킷의 허용 및 차단 여부가 결정됩니다.
+![ACL Block Test](Screenshots/acl_block.png)
 
+![ACL Permit Test](Screenshots/acl_permit.png)
 ### 4-6. DHCP 자동 IP 할당
 
 라우터에서 DHCP Pool을 생성하여 HR과 DEV PC에 IP 주소를 자동으로 할당하도록 구현했습니다.
-
+![DHCP Pool Configuration](Screenshots/dhcp_pool.png)
 ```bash
 ip dhcp excluded-address 192.168.10.1 192.168.10.9
 ip dhcp excluded-address 192.168.20.1 192.168.20.9
@@ -187,7 +189,7 @@ dns-server 192.168.30.2
 ```
 
 DHCP를 통해 각 PC에 IP 주소, 기본 게이트웨이, DNS 서버 주소를 자동으로 전달하도록 구성했습니다.
-
+![DHCP Binding](Screenshots/dhcp_binding.png)
 ### 4-7. DNS 서버 구축
 
 Server-PT에서 DNS 서비스를 활성화하고 A Record를 등록했습니다.
@@ -199,7 +201,7 @@ Server-PT에서 DNS 서비스를 활성화하고 A Record를 등록했습니다.
 | IP Address | 192.168.30.2 |
 
 PC에서 도메인 이름을 입력하면 DNS 서버가 해당 서버의 IP 주소를 반환하도록 구현했습니다.
-
+![DNS Test](Screenshots/dns_test.png)
 ### 4-8. HTTP 웹 서버 구축
 
 Server-PT에서 HTTP 서비스를 활성화하고 웹페이지를 직접 제작했습니다.
@@ -212,7 +214,9 @@ Server-PT에서 HTTP 서비스를 활성화하고 웹페이지를 직접 제작�
 | Domain | www.goosetalk.com |
 
 HR과 DEV 부서에서 웹 브라우저를 통해 도메인 이름으로 서버에 접근할 수 있도록 구성했습니다.
+![Web Test HR](Screenshots/web_test_HR.png)
 
+![Web Test DEV](Screenshots/web_test_DEV.png)
 ## 5. 최종 네트워크 검증 결과
 
 주요 네트워크 기능과 서버 서비스에 대한 테스트를 진행했습니다.
