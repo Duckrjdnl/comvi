@@ -1,89 +1,135 @@
-# Project 02. 기업 본사 및 지사 네트워크 구축
-
-**Enterprise Multi-Site Network Design & Implementation**
-
-- 프로젝트 유형: 네트워크 인프라 구축 및 라우팅 실습
-- 개발 환경: Cisco Packet Tracer
-- 사용 장비: Cisco Router 2911, Switch 2960, PC, Server
-- 핵심 기술: TCP/IP, IPv4, Subnetting, LAN/WAN, OSPF
-- 진행 상태: 기본 네트워크 구성 및 OSPF 동적 라우팅 완료
-
----
+# 기업 본사 및 지사 네트워크 구축
+### Enterprise Multi-Site Network Design & Implementation
 
 ## 1. 프로젝트 개요
 
-본 프로젝트는 기업의 본사(HQ)와 두 개의 지사(Branch)를 연결하는 다중 사이트 네트워크 구축을 목적으로 진행하였다.
+Cisco Packet Tracer를 활용하여 기업의 본사(HQ)와 2개의 지사(Branch1, Branch2)를 연결하는 다중 지점 네트워크를 설계하고 구축한 프로젝트입니다.
 
-각 지점에 독립적인 LAN 환경을 구성하고, 라우터를 이용하여 지점 간 통신이 가능하도록 설계하였다.
+각 지점에 독립적인 LAN을 구성하고 OSPF 동적 라우팅을 적용하여 서로 다른 네트워크 간 통신이 가능하도록 구현했습니다.
 
-또한 OSPF(Open Shortest Path First)를 적용하여 각 라우터가 네트워크 경로 정보를 자동으로 교환하고 학습할 수 있도록 구현하였다.
+또한 각 지점의 라우터에 DHCP 서버 기능을 구성하여 PC가 IP 주소를 자동으로 할당받도록 했으며, Ping과 Traceroute를 활용하여 지점 간 통신 및 패킷 전달 경로를 검증했습니다.
 
-## 2. 프로젝트 목표
+- **프로젝트 유형:** 기업 본사 및 지사 네트워크 구축
+- **개발 도구:** Cisco Packet Tracer
+- **라우터:** Cisco 2911
+- **스위치:** Cisco 2960
+- **PC:** PC-PT 3대
+- **서버:** Server-PT 1대
+- **주요 기술:** IPv4, Subnetting, OSPF, DHCP, ICMP, Traceroute
 
-- 본사와 두 개 지점의 네트워크 연결
-- 각 지점별 독립적인 IP 네트워크 구성
-- 라우터 인터페이스 및 IP 주소 설정
-- WAN 구간 서브넷팅 및 /30 주소 설계
-- OSPF 동적 라우팅 프로토콜 적용
-- 라우팅 테이블을 통한 경로 학습 검증
-- 네트워크 장애 원인 분석 및 복구 경험
+## 2. 네트워크 구성도
 
-## 3. 네트워크 구성
+본사와 2개의 지사를 라우터를 통해 연결하는 구조로 구성했습니다.
 
-총 3개의 라우터와 3개의 스위치를 이용하여 본사와 지사 네트워크를 구성하였다.
+```text
+                    [ Server0 ]
+                         |
+                    192.168.100.0/24
+                         |
+                     [Router0]
+                       HQ
+                         |
+                    10.0.12.0/30
+                         |
+                     [Router1]
+                     Branch1
+                         |
+                    10.0.23.0/30
+                         |
+                     [Router2]
+                     Branch2
 
-- HQ: Router0, Switch0, PC0, Server0
-- Branch1: Router1, Switch1, PC1
-- Branch2: Router2, Switch2, PC2
+       [Router0]          [Router1]          [Router2]
+           |                  |                  |
+        [Switch0]          [Switch1]          [Switch2]
+           |                  |                  |
+          PC0                PC1                PC2
+           HQ              Branch1            Branch2
+```
 
-라우터 간 연결은 다음과 같이 구성하였다.
+## 3. 네트워크 IP 설계
 
-- Router0 ↔ Router1
-- Router1 ↔ Router2
+### 3-1. 지점별 LAN 네트워크
 
-서버는 Router0의 별도 인터페이스에 연결하여 독립적인 서버 네트워크를 구성하였다.
-
-## 4. IP 주소 설계
-
-| 구분 | 네트워크 주소 | 게이트웨이 |
+| 구분 | 네트워크 주소 | 기본 게이트웨이 |
 |---|---|---|
-| HQ LAN | 192.168.10.0/24 | 192.168.10.1 |
-| Branch1 LAN | 192.168.20.0/24 | 192.168.20.1 |
-| Branch2 LAN | 192.168.30.0/24 | 192.168.30.1 |
-| Server LAN | 192.168.100.0/24 | 192.168.100.1 |
-| HQ ↔ Branch1 | 10.0.12.0/30 | .1 / .2 |
-| Branch1 ↔ Branch2 | 10.0.23.0/30 | .1 / .2 |
+| HQ | 192.168.10.0/24 | 192.168.10.1 |
+| Branch1 | 192.168.20.0/24 | 192.168.20.1 |
+| Branch2 | 192.168.30.0/24 | 192.168.30.1 |
+| Server | 192.168.100.0/24 | 192.168.100.1 |
 
-### 라우터 인터페이스 설정
+### 3-2. 라우터 인터페이스 IP 주소
 
-**Router0 (HQ)**
+| 장비 | 인터페이스 | IP 주소 | 서브넷 마스크 |
+|---|---|---|---|
+| Router0 | G0/0 | 192.168.10.1 | 255.255.255.0 |
+| Router0 | G0/1 | 10.0.12.1 | 255.255.255.252 |
+| Router0 | G0/2 | 192.168.100.1 | 255.255.255.0 |
+| Router1 | G0/0 | 192.168.20.1 | 255.255.255.0 |
+| Router1 | G0/1 | 10.0.12.2 | 255.255.255.252 |
+| Router1 | G0/2 | 10.0.23.1 | 255.255.255.252 |
+| Router2 | G0/0 | 192.168.30.1 | 255.255.255.0 |
+| Router2 | G0/1 | 10.0.23.2 | 255.255.255.252 |
 
-| 인터페이스 | IP 주소 |
-|---|---|
-| G0/0 | 192.168.10.1/24 |
-| G0/1 | 10.0.12.1/30 |
-| G0/2 | 192.168.100.1/24 |
+### 3-3. PC 및 서버 IP 주소
 
-**Router1 (Branch1)**
+| 장비 | IP 주소 | 할당 방식 |
+|---|---|---|
+| PC0 (HQ) | 192.168.10.11 | DHCP |
+| PC1 (Branch1) | 192.168.20.11 | DHCP |
+| PC2 (Branch2) | 192.168.30.11 | DHCP |
+| Server0 | 192.168.100.2 | Static IP 계획 |
 
-| 인터페이스 | IP 주소 |
-|---|---|
-| G0/0 | 192.168.20.1/24 |
-| G0/1 | 10.0.12.2/30 |
-| G0/2 | 10.0.23.1/30 |
+- LAN Subnet Mask: 255.255.255.0
+- WAN Subnet Mask: 255.255.255.252
+- 각 PC의 기본 게이트웨이는 해당 지점 라우터의 G0/0 주소로 설정
 
-**Router2 (Branch2)**
+## 4. 주요 구현 내용
 
-| 인터페이스 | IP 주소 |
-|---|---|
-| G0/0 | 192.168.30.1/24 |
-| G0/1 | 10.0.23.2/30 |
+### 4-1. 라우터 인터페이스 구성
 
-## 5. OSPF 동적 라우팅 구성
+각 라우터의 LAN 및 WAN 인터페이스에 IP 주소를 설정하고 인터페이스를 활성화했습니다.
 
-각 라우터에 OSPF Process ID 1을 설정하고 Area 0을 사용하여 라우팅 정보를 교환하도록 구성하였다.
+설정 예시(Router0):
 
-### Router0 설정
+```bash
+enable
+configure terminal
+
+interface gigabitEthernet 0/0
+ip address 192.168.10.1 255.255.255.0
+no shutdown
+
+interface gigabitEthernet 0/1
+ip address 10.0.12.1 255.255.255.252
+no shutdown
+
+interface gigabitEthernet 0/2
+ip address 192.168.100.1 255.255.255.0
+no shutdown
+```
+
+인터페이스 확인 명령어:
+
+```bash
+show ip interface brief
+```
+
+### 4-2. OSPF 동적 라우팅 구성
+
+본사와 지사 간 네트워크 경로 정보를 자동으로 교환하기 위해 OSPF를 구성했습니다.
+
+OSPF는 링크 상태 기반의 동적 라우팅 프로토콜로, 라우터 간 경로 정보를 공유하고 최적 경로를 계산합니다.
+
+**OSPF 설정 정보**
+
+| 라우터 | Router ID | Area |
+|---|---|---|
+| Router0 | 1.1.1.1 | 0 |
+| Router1 | 2.2.2.2 | 0 |
+| Router2 | 3.3.3.3 | 0 |
+
+**Router0 설정**
 
 ```bash
 router ospf 1
@@ -93,7 +139,7 @@ network 10.0.12.0 0.0.0.3 area 0
 network 192.168.100.0 0.0.0.255 area 0
 ```
 
-### Router1 설정
+**Router1 설정**
 
 ```bash
 router ospf 1
@@ -103,7 +149,7 @@ network 10.0.12.0 0.0.0.3 area 0
 network 10.0.23.0 0.0.0.3 area 0
 ```
 
-### Router2 설정
+**Router2 설정**
 
 ```bash
 router ospf 1
@@ -112,95 +158,229 @@ network 192.168.30.0 0.0.0.255 area 0
 network 10.0.23.0 0.0.0.3 area 0
 ```
 
-## 6. 검증 결과
+**OSPF 검증 명령어**
 
-다음 명령어를 사용하여 네트워크 상태와 라우팅 정보를 확인하였다.
-
-| 명령어 | 검증 목적 |
-|---|---|
-| show ip interface brief | 인터페이스 IP 및 연결 상태 확인 |
-| show ip protocols | OSPF 프로토콜 설정 확인 |
-| show ip ospf neighbor | OSPF 이웃 관계 확인 |
-| show ip ospf interface | OSPF 인터페이스 정보 확인 |
-| show ip route | 라우팅 테이블 및 경로 학습 확인 |
-| ping | 라우터 간 IP 통신 확인 |
-
-### 라우팅 테이블 검증
-
-Router0에서 `show ip route` 명령어를 실행하여 다음 경로가 OSPF를 통해 학습된 것을 확인하였다.
-
-```text
-O 192.168.20.0/24 [110/2] via 10.0.12.2
-O 192.168.30.0/24 [110/3] via 10.0.12.2
-O 10.0.23.0/30 [110/2] via 10.0.12.2
+```bash
+show ip ospf neighbor
+show ip protocols
+show ip route
 ```
 
-**검증 결과**
+검증 결과:
+- OSPF 인접 라우터 확인
+- 각 라우터의 Router ID 확인
+- 본사에서 지사1 및 지사2의 네트워크 경로 학습 확인
+- 라우팅 테이블에서 O 코드로 표시되는 OSPF 경로 확인
 
-- 본사에서 Branch1 네트워크 경로 학습 확인
-- 본사에서 Branch2 네트워크 경로 학습 확인
-- Branch1을 경유하는 Branch2 경로 학습 확인
-- OSPF를 통한 원격 네트워크 라우팅 확인
+### 4-3. OSPF 트러블슈팅
 
-## 7. 트러블슈팅 사례
+OSPF 구성 과정에서 Router0의 G0/1 인터페이스 서브넷 마스크가 /24로 잘못 설정되어 Router1과의 OSPF 인접 관계 형성에 문제가 발생했습니다.
 
-### 문제: OSPF 이웃 관계가 형성되지 않는 현상
-
-**발생 상황**
-
-`show ip ospf neighbor` 명령어 실행 시 OSPF 이웃 라우터가 표시되지 않는 문제가 발생하였다.
-
-**원인 분석**
-
-- 라우터 인터페이스 상태 확인
-- 라우터 간 IP 통신 테스트
-- OSPF 프로토콜 및 네트워크 등록 상태 확인
-- 연결 인터페이스의 서브넷 마스크 비교
-
-확인 결과 Router0과 Router1의 WAN 인터페이스 서브넷 마스크가 서로 다르게 설정되어 있었다.
-
-| 장비 | 기존 설정 |
-|---|---|
-| Router0 | 10.0.12.1/24 |
-| Router1 | 10.0.12.2/30 |
-
-**해결 방법**
-
-Router0의 G0/1 인터페이스 서브넷 마스크를 /30으로 수정하였다.
+Router0의 G0/1 서브넷 마스크를 /30으로 수정하여 해결했습니다.
 
 ```bash
 interface gigabitEthernet 0/1
 ip address 10.0.12.1 255.255.255.252
 ```
 
-**최종 결과**
+수정 이후 OSPF 인접 관계가 정상적으로 형성되었으며 다른 지점의 네트워크 경로가 라우팅 테이블에 등록되는 것을 확인했습니다.
 
-OSPF 이웃 관계가 형성되었으며, Router0에서 Branch1 및 Branch2의 네트워크 경로가 정상적으로 학습되는 것을 확인하였다.
+이를 통해 라우터 간 연결에서 IP 주소뿐 아니라 서브넷 마스크도 정확하게 설정해야 한다는 점을 학습했습니다.
 
-이를 통해 IP 주소 및 서브넷 마스크 설정의 중요성과 네트워크 장애 분석 절차를 경험하였다.
+### 4-4. DHCP 자동 IP 할당 구성
 
-## 8. 프로젝트를 통해 습득한 역량
+각 지점의 PC가 수동 IP 설정 없이 자동으로 주소를 할당받도록 각 라우터에 DHCP Pool을 생성했습니다.
 
-- 기업 네트워크의 기본적인 다중 사이트 구성 이해
-- IPv4 주소 체계 및 서브넷팅 실습
-- 라우터와 스위치의 역할 및 인터페이스 설정
-- OSPF 동적 라우팅 구성 및 검증
-- 라우팅 테이블 분석
-- 네트워크 연결 장애 원인 분석 및 수정
-- Cisco IOS CLI 기반 네트워크 관리 경험
+| 라우터 | DHCP Pool | 네트워크 | 기본 게이트웨이 |
+|---|---|---|---|
+| Router0 | HQ | 192.168.10.0/24 | 192.168.10.1 |
+| Router1 | BRANCH1 | 192.168.20.0/24 | 192.168.20.1 |
+| Router2 | BRANCH2 | 192.168.30.0/24 | 192.168.30.1 |
 
-## 9. 향후 확장 계획
+각 DHCP Pool에서 .1~.10 주소를 제외하여 게이트웨이 및 관리용 주소로 사용할 수 있도록 구성했습니다.
 
-프로젝트의 네트워크 기능을 확장하여 실제 기업 환경에 가까운 인프라를 구축할 계획이다.
+**Router0 DHCP 설정**
 
-- DHCP: 각 지점 PC의 IP 자동 할당
-- NAT/PAT: 사설 네트워크의 외부 통신 구현
-- SSH: 라우터 원격 관리 환경 구축
-- 최종 통신 테스트: 본사와 지사 간 PC 통신 및 서비스 접근 검증
-- 네트워크 구성도와 검증 스크린샷 추가
+```bash
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
 
----
+ip dhcp pool HQ
+network 192.168.10.0 255.255.255.0
+default-router 192.168.10.1
+dns-server 192.168.100.2
+```
 
-**프로젝트 요약**
+**Router1 DHCP 설정**
 
-Cisco Packet Tracer를 활용하여 본사와 두 개 지점으로 구성된 기업 네트워크를 설계하고 구축하였다. 각 지점에 독립적인 LAN을 구성하고 OSPF 동적 라우팅을 적용하여 네트워크 경로를 자동으로 학습하도록 구현하였다. 구축 과정에서 발생한 서브넷 마스크 불일치 문제를 직접 분석하고 수정하여 OSPF 이웃 관계 및 원격 네트워크 경로 학습을 검증하였다.
+```bash
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+
+ip dhcp pool BRANCH1
+network 192.168.20.0 255.255.255.0
+default-router 192.168.20.1
+dns-server 192.168.100.2
+```
+
+**Router2 DHCP 설정**
+
+```bash
+ip dhcp excluded-address 192.168.30.1 192.168.30.10
+
+ip dhcp pool BRANCH2
+network 192.168.30.0 255.255.255.0
+default-router 192.168.30.1
+dns-server 192.168.100.2
+```
+
+**DHCP 검증 명령어**
+
+```bash
+show ip dhcp pool
+show ip dhcp binding
+```
+
+검증 결과:
+- 3개 라우터의 DHCP Pool 생성
+- PC의 IP 주소 자동 할당 확인
+- Router2의 DHCP Binding 테이블에서 PC2의 IP 주소 및 MAC 주소 확인
+
+PC2 DHCP 할당 결과:
+
+| 항목 | 결과 |
+|---|---|
+| IP Address | 192.168.30.11 |
+| Client MAC | 00E0.B019.5C43 |
+| 할당 방식 | Automatic |
+
+### 4-5. 지점 간 네트워크 통신 검증
+
+OSPF 동적 라우팅과 DHCP 설정이 완료된 이후 각 지점의 PC 간 통신을 Ping 명령어로 검증했습니다.
+
+**Ping 테스트**
+
+```bash
+ping 192.168.10.11
+ping 192.168.20.11
+ping 192.168.30.11
+```
+
+검증 결과:
+- PC2에서 본사 PC0 통신 성공
+- PC2에서 지사1 PC1 통신 성공
+- 각 지점 간 통신 정상 작동 확인
+
+초기 테스트에서 본사 PC0의 IP 주소를 192.168.10.10으로 잘못 지정하여 Ping이 실패했습니다.
+
+실제 DHCP 할당 주소인 192.168.10.11로 수정하여 정상 통신을 확인했습니다.
+
+### 4-6. Traceroute를 통한 경로 검증
+
+PC2에서 본사 Router0까지 패킷이 이동하는 경로를 확인하기 위해 Traceroute를 수행했습니다.
+
+**실행 명령어**
+
+```bash
+tracert 192.168.10.1
+```
+
+**실제 확인된 경로**
+
+| Hop | IP 주소 | 장비 |
+|---|---|---|
+| 1 | 192.168.30.1 | Router2 |
+| 2 | 10.0.23.1 | Router1 |
+| 3 | 192.168.10.1 | Router0 |
+
+검증 결과:
+- PC2에서 기본 게이트웨이 Router2로 전달
+- Router1을 경유하여 Router0에 도달
+- 총 3개의 홉을 거쳐 본사 라우터까지 도달하는 경로 확인
+
+이를 통해 OSPF를 통해 학습한 경로가 실제 패킷 전달에 사용되는 것을 확인했습니다.
+
+## 5. 최종 네트워크 검증 결과
+
+| 검증 항목 | 테스트 방법 | 결과 |
+|---|---|---|
+| 라우터 인터페이스 | `show ip interface brief` | 확인 완료 |
+| OSPF 인접 관계 | `show ip ospf neighbor` | 성공 |
+| OSPF 경로 학습 | `show ip route` | 성공 |
+| OSPF 프로토콜 | `show ip protocols` | 확인 완료 |
+| DHCP Pool | `show ip dhcp pool` | 성공 |
+| DHCP Binding | `show ip dhcp binding` | 성공 |
+| PC IP 자동 할당 | PC IP Configuration | 성공 |
+| 본사 ↔ 지사2 Ping | `ping 192.168.10.11` | 성공 |
+| 지사2 ↔ 지사1 Ping | `ping 192.168.20.11` | 성공 |
+| 경로 추적 | `tracert 192.168.10.1` | 성공 |
+
+## 6. 주요 확인 명령어
+
+네트워크 구성 및 문제 해결 과정에서 다음 명령어를 활용했습니다.
+
+```bash
+show ip interface brief
+show ip ospf neighbor
+show ip protocols
+show ip route
+show ip dhcp pool
+show ip dhcp binding
+ping [IP 주소]
+tracert [IP 주소]
+```
+
+## 7. 프로젝트를 통해 학습한 내용
+
+- 기업 본사 및 지사 네트워크 토폴로지 설계
+- IPv4 주소 체계 및 서브넷 마스크 구성
+- /30 서브넷을 활용한 라우터 간 연결
+- OSPF 동적 라우팅 구성 및 경로 학습
+- DHCP Pool을 활용한 IP 자동 할당
+- DHCP Binding을 통한 IP 및 MAC 주소 확인
+- Ping을 활용한 네트워크 연결 검증
+- Traceroute를 통한 패킷 전달 경로 분석
+- 서브넷 마스크 및 IP 주소 오류 해결 경험
+- 다중 지점 네트워크의 라우팅 구조 이해
+
+## 8. 향후 개선 계획
+
+현재 본사 및 지사 간 내부 네트워크 구성과 통신 검증을 완료했습니다.
+
+향후 다음 기능을 추가하여 기업 네트워크의 확장성과 보안성을 높일 계획입니다.
+
+- NAT/PAT를 통한 외부 네트워크 통신
+- SSH를 활용한 라우터 원격 관리
+- ACL을 활용한 네트워크 접근 제어
+- 네트워크 장애 상황을 가정한 트러블슈팅
+- 네트워크 모니터링 및 로그 관리
+
+## 9. 프로젝트 파일 구조
+
+```text
+Network-Portfolio/
+└── 02_Enterprise_Network/
+    ├── README.md
+    ├── Project_02_Enterprise_Network.pkt
+    └── Screenshots/
+        ├── 01_topology.png
+        ├── 02_router_interfaces.png
+        ├── 03_ospf_neighbor.png
+        ├── 04_ospf_routing_table.png
+        ├── 05_ospf_protocols.png
+        ├── 06_dhcp_pool.png
+        ├── 07_dhcp_binding.png
+        ├── 08_dhcp_client.png
+        ├── 09_ping_test.png
+        └── 10_traceroute.png
+```
+
+## 10. 프로젝트 요약
+
+본 프로젝트에서는 기업의 본사와 2개 지사를 연결하는 다중 지점 네트워크를 설계하고 구축했습니다.
+
+OSPF 동적 라우팅을 통해 각 지점의 네트워크 경로를 자동으로 학습하도록 구성했으며, DHCP를 활용하여 각 지점의 PC에 IP 주소를 자동 할당했습니다.
+
+이후 Ping과 Traceroute를 통해 실제 지점 간 통신 및 패킷 전달 경로를 검증했습니다.
+
+**Project:** Enterprise Multi-Site Network Design & Implementation  
+**Tool:** Cisco Packet Tracer  
+**Focus:** Network Infrastructure / OSPF / DHCP / Routing / Troubleshooting
