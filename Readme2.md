@@ -102,6 +102,8 @@ show ip interface brief
 
 ### 4-2. OSPF 동적 라우팅 구성
 
+![OSPF Neighbor](Screenshots/03_ospf_neighbor.png)
+
 본사와 지사 간 네트워크 경로 정보를 자동으로 교환하기 위해 OSPF를 구성했습니다.
 
 OSPF는 링크 상태 기반의 동적 라우팅 프로토콜로, 라우터 간 경로 정보를 공유하고 최적 경로를 계산합니다.
