@@ -22,22 +22,7 @@ Cisco Packet Tracer를 활용하여 기업의 본사(HQ)와 2개의 지사(Branc
 본사(Router0)와 2개의 지사(Router1,Router2)를 라우터를 통해 연결하는 구조로 구성했습니다.
 
 ![Network Topology](Screenshots/01_topology.png)
-                    [ Server0 ]
-                         |
-                    192.168.100.0/24
-                         |
-                     [Router0]
-                       HQ
-                         |
-                    10.0.12.0/30
-                         |
-                     [Router1]
-                     Branch1
-                         |
-                    10.0.23.0/30
-                         |
-                     [Router2]
-                     Branch2
+                   
 
        [Router0]          [Router1]          [Router2]
            |                  |                  |
