@@ -45,6 +45,8 @@ Cisco Packet Tracer를 활용하여 기업의 본사(HQ)와 2개의 지사(Branc
 
 ### 3-2. 라우터 인터페이스 IP 주소
 
+![Router Interface Configuration](Screenshots/02_router0_interface.png)
+
 | 장비 | 인터페이스 | IP 주소 | 서브넷 마스크 |
 |---|---|---|---|
 | Router0 | G0/0 | 192.168.10.1 | 255.255.255.0 |
@@ -102,7 +104,7 @@ show ip interface brief
 
 ### 4-2. OSPF 동적 라우팅 구성
 
-![OSPF Neighbor](Screenshots/03_ospf_neighbor.png)
+![OSPF Configuration](Screenshots/03_ospf_config.png)
 
 본사와 지사 간 네트워크 경로 정보를 자동으로 교환하기 위해 OSPF를 구성했습니다.
 
@@ -152,6 +154,11 @@ show ip ospf neighbor
 show ip protocols
 show ip route
 ```
+![OSPF Neighbor R0](Screenshots/04_ospf_neighbor_R0.png)
+
+![OSPF Neighbor R1](Screenshots/04_ospf_neighbor_R1.png)
+
+![OSPF Routing Table](Screenshots/05_routing_table.png)
 
 검증 결과:
 - OSPF 인접 라우터 확인
@@ -177,7 +184,7 @@ ip address 10.0.12.1 255.255.255.252
 ### 4-4. DHCP 자동 IP 할당 구성
 
 각 지점의 PC가 수동 IP 설정 없이 자동으로 주소를 할당받도록 각 라우터에 DHCP Pool을 생성했습니다.
-
+![DHCP Pool](Screenshots/06_dhcp_pool.png)
 | 라우터 | DHCP Pool | 네트워크 | 기본 게이트웨이 |
 |---|---|---|---|
 | Router0 | HQ | 192.168.10.0/24 | 192.168.10.1 |
@@ -238,7 +245,9 @@ PC2 DHCP 할당 결과:
 | IP Address | 192.168.30.11 |
 | Client MAC | 00E0.B019.5C43 |
 | 할당 방식 | Automatic |
+![DHCP Binding](Screenshots/07_dhcp_binding.png)
 
+![DHCP Client](Screenshots/08_dhcp_client.png)
 ### 4-5. 지점 간 네트워크 통신 검증
 
 OSPF 동적 라우팅과 DHCP 설정이 완료된 이후 각 지점의 PC 간 통신을 Ping 명령어로 검증했습니다.
@@ -259,7 +268,7 @@ ping 192.168.30.11
 초기 테스트에서 본사 PC0의 IP 주소를 192.168.10.10으로 잘못 지정하여 Ping이 실패했습니다.
 
 실제 DHCP 할당 주소인 192.168.10.11로 수정하여 정상 통신을 확인했습니다.
-
+![Ping Test](Screenshots/09_ping_test.png)
 ### 4-6. Traceroute를 통한 경로 검증
 
 PC2에서 본사 Router0까지 패킷이 이동하는 경로를 확인하기 위해 Traceroute를 수행했습니다.
@@ -284,7 +293,7 @@ tracert 192.168.10.1
 - 총 3개의 홉을 거쳐 본사 라우터까지 도달하는 경로 확인
 
 이를 통해 OSPF를 통해 학습한 경로가 실제 패킷 전달에 사용되는 것을 확인했습니다.
-
+![Traceroute Test](Screenshots/10_traceroute.png)
 ## 5. 최종 네트워크 검증 결과
 
 | 검증 항목 | 테스트 방법 | 결과 |
