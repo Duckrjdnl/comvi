@@ -189,6 +189,7 @@ dns-server 192.168.30.2
 ```
 
 DHCP를 통해 각 PC에 IP 주소, 기본 게이트웨이, DNS 서버 주소를 자동으로 전달하도록 구성했습니다.
+
 ![DHCP Binding](Screenshots/dhcp_binding.png)
 ### 4-7. DNS 서버 구축
 
