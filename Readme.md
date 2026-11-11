@@ -1,28 +1,31 @@
-# 기업 부서별 VLAN 네트워크 구축
+# 기업 부서별 VLAN 네트워크 구축(11.2-11.6)
 ### Enterprise Network Design & Implementation
 
 ## 1. 프로젝트 개요
 
 Cisco Packet Tracer를 활용하여 기업 환경을 가정한 부서별 네트워크 인프라를 설계하고 구축한 프로젝트입니다.
 
-HR, DEV, SERVER 네트워크를 VLAN으로 분리하고 Router-on-a-Stick을 이용해 VLAN 간 라우팅을 구현했습니다.
+HR, DEV, SERVER 네트워크를 VLAN으로 분리하고 Router-on-a-Stick을 이용하여 VLAN 간 라우팅을 구현했습니다.
 
-Extended ACL을 통한 부서별 접근 제어, DHCP 자동 IP 할당, DNS 도메인 이름 해석, HTTP 웹 서버 구축까지 진행했습니다.
+또한 Extended ACL을 통한 부서별 접근 제어, DHCP 자동 IP 할당, DNS 도메인 이름 해석, HTTP 웹 서버 구축까지 진행했습니다.
 
-- **프로젝트 유형:** 기업 네트워크 인프라 구축
-- **개발 도구:** Cisco Packet Tracer
-- **라우터:** Cisco 2911
-- **스위치:** Cisco 2960
-- **서버:** Server-PT
-- **주요 기술:** VLAN, Trunk, Router-on-a-Stick, ACL, DHCP, DNS, HTTP
+| 항목 | 내용 |
+|---|---|
+| 프로젝트 유형 | 기업 네트워크 인프라 구축 |
+| 개발 도구 | Cisco Packet Tracer |
+| 라우터 | Cisco 2911 |
+| 스위치 | Cisco 2960 |
+| 서버 | Server-PT |
+| 주요 기술 | VLAN, Trunk, Router-on-a-Stick, ACL, DHCP, DNS, HTTP |
 
 ## 2. 네트워크 구성도
+
+![Network Topology](Screenshots/topology.png)
 
 ```text
                    [ Cisco 2911 Router ]
                           G0/0
                        802.1Q Trunk
-                            |
                             |
                    [ Cisco 2960 Switch ]
                             |
@@ -40,43 +43,49 @@ Extended ACL을 통한 부서별 접근 제어, DHCP 자동 IP 할당, DNS 도�
 
 ## 3. 네트워크 IP 설계
 
-| 구분 | VLAN | 네트워크 주소 | 게이트웨이 |
+### 3-1. VLAN 및 네트워크 대역
+
+| 구분 | VLAN ID | 네트워크 주소 | 게이트웨이 |
 |---|---:|---|---|
 | HR | 10 | 192.168.10.0/24 | 192.168.10.1 |
 | DEV | 20 | 192.168.20.0/24 | 192.168.20.1 |
 | SERVER | 30 | 192.168.30.0/24 | 192.168.30.1 |
 
-### 장비별 IP 주소
+### 3-2. 장비별 IP 주소
 
-| 장비 | 연결 포트 | IP 주소 |
+| 장비 | 인터페이스 | IP 주소 |
 |---|---|---|
 | Router | G0/0.10 | 192.168.10.1 |
 | Router | G0/0.20 | 192.168.20.1 |
 | Router | G0/0.30 | 192.168.30.1 |
-| PC0 (HR) | Fa0/2 | 192.168.10.10 |
-| PC1 (DEV) | Fa0/3 | 192.168.20.10 |
-| Server-PT | Fa0/4 | 192.168.30.2 |
+| PC0 (HR) | NIC | 192.168.10.10 |
+| PC1 (DEV) | NIC | 192.168.20.10 |
+| Server-PT | NIC | 192.168.30.2 |
 
+- Subnet Mask: 255.255.255.0
 - PC: DHCP 자동 할당
 - Server: Static IP 설정
-- Subnet Mask: 255.255.255.0
 
 ## 4. 주요 구현 내용
 
 ### 4-1. VLAN 구성
 
-기업 부서별 네트워크를 논리적으로 분리했습니다.
+기업 부서별 네트워크를 논리적으로 분리하기 위해 VLAN을 생성했습니다.
 
 ```bash
 vlan 10
 name HR
+
 vlan 20
 name DEV
+
 vlan 30
 name SERVER
 ```
 
 ### 4-2. Access 포트 설정
+
+각 PC와 서버가 지정된 VLAN에 연결되도록 스위치 포트를 설정했습니다.
 
 ```bash
 int fa0/2
@@ -101,9 +110,9 @@ int fa0/1
 switchport mode trunk
 ```
 
-### 4-4. Router-on-a-Stick
+### 4-4. Router-on-a-Stick 구성
 
-하나의 물리적 라우터 인터페이스에 VLAN별 서브인터페이스를 생성하여 VLAN 간 통신을 구현했습니다.
+하나의 물리적 라우터 인터페이스에 VLAN별 서브인터페이스를 생성하여 VLAN 간 라우팅을 구현했습니다.
 
 ```bash
 int g0/0
@@ -122,11 +131,11 @@ encapsulation dot1Q 30
 ip address 192.168.30.1 255.255.255.0
 ```
 
-### 4-5. ACL 접근 제어
+### 4-5. Extended ACL 접근 제어
 
-Extended ACL을 이용하여 HR 부서의 네트워크 접근을 제한했습니다.
+Extended ACL을 이용하여 부서별 네트워크 접근 정책을 구성했습니다.
 
-**접근 정책**
+**접근 제어 정책**
 
 | 출발지 | 목적지 | 정책 |
 |---|---|---|
@@ -138,7 +147,7 @@ Extended ACL을 이용하여 HR 부서의 네트워크 접근을 제한했습니
 | DEV | HR | 허용 |
 | DEV | SERVER | 허용 |
 
-HR에서 서버에 접근할 때 DNS 및 웹 서비스에 필요한 포트만 허용하도록 설정했습니다.
+HR 부서에서는 서버의 DNS 및 웹 서비스에 필요한 포트만 접근할 수 있도록 제한했습니다.
 
 ACL은 Router의 G0/0.10 인터페이스에 Inbound 방향으로 적용했습니다.
 
@@ -156,11 +165,11 @@ interface g0/0.10
 ip access-group 101 in
 ```
 
-※ 실제 장비의 ACL 순서는 `show access-lists` 결과를 기준으로 확인했습니다. ACL은 상태 추적 기능이 없는 Stateless 패킷 필터링 방식입니다.
+ACL은 Stateless 패킷 필터링 방식으로 동작하며, 규칙의 순서에 따라 패킷의 허용 및 차단 여부가 결정됩니다.
 
-### 4-6. DHCP 구성
+### 4-6. DHCP 자동 IP 할당
 
-라우터에서 DHCP Pool을 생성하여 HR과 DEV PC에 IP 주소를 자동 할당하도록 구현했습니다.
+라우터에서 DHCP Pool을 생성하여 HR과 DEV PC에 IP 주소를 자동으로 할당하도록 구현했습니다.
 
 ```bash
 ip dhcp excluded-address 192.168.10.1 192.168.10.9
@@ -195,16 +204,18 @@ PC에서 도메인 이름을 입력하면 DNS 서버가 해당 서버의 IP 주�
 
 Server-PT에서 HTTP 서비스를 활성화하고 웹페이지를 직접 제작했습니다.
 
-- Web Server IP: 192.168.30.2
-- HTTP Port: 80
-- HTTPS Port: 443 (서비스 활성화 시)
-- Domain: www.goosetalk.com
+| 항목 | 설정값 |
+|---|---|
+| Web Server IP | 192.168.30.2 |
+| HTTP Port | 80 |
+| HTTPS Port | 443 (서비스 활성화 시) |
+| Domain | www.goosetalk.com |
 
 HR과 DEV 부서에서 웹 브라우저를 통해 도메인 이름으로 서버에 접근할 수 있도록 구성했습니다.
 
 ## 5. 최종 네트워크 검증 결과
 
-모든 주요 네트워크 기능과 서버 서비스에 대한 테스트를 완료했습니다.
+주요 네트워크 기능과 서버 서비스에 대한 테스트를 진행했습니다.
 
 | 검증 항목 | 테스트 방법 | 결과 |
 |---|---|---|
@@ -220,6 +231,8 @@ HR과 DEV 부서에서 웹 브라우저를 통해 도메인 이름으로 서버�
 | 서버 게이트웨이 통신 | `ping 192.168.30.1` | 통신 성공 |
 
 ## 6. 주요 확인 명령어
+
+구축 및 검증 과정에서 다음 명령어를 활용했습니다.
 
 ```bash
 show vlan brief
