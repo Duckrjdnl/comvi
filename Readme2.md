@@ -19,7 +19,7 @@ Cisco Packet Tracer를 활용하여 기업의 본사(HQ)와 2개의 지사(Branc
 
 ## 2. 네트워크 구성도
 
-본사와 2개의 지사를 라우터를 통해 연결하는 구조로 구성했습니다.
+본사(Router0)와 2개의 지사(Router1,Router2)를 라우터를 통해 연결하는 구조로 구성했습니다.
 
 ![Network Topology](Screenshots/01_topology.png)
                     [ Server0 ]
